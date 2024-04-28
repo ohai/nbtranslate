@@ -43,22 +43,29 @@ def extract_translation(nbfile, potfile):
     return 0
 
 
+def translate_cells(cells, id2msgstr):
+    for c in cells:
+        if c.cell_type != 'code':
+            lines = []
+            for l in c.source.split('\n'):
+                try:
+                    lines.append(id2msgstr[l])
+                except:
+                    lines.append(l)
+            c.source = '\n'.join(lines)
+    
 def apply_translation(nbfile, pofile, outfile):
     d = nbformat.read(nbfile, nbformat.NO_CONVERT)
     po = polib.pofile(pofile)
-    _ = {}
+    id2msgstr = {}
     for e in po.translated_entries():
-        _[e.msgid] = e.msgstr
-    for w in d.worksheets:
-        for c in w.cells:
-            if c.cell_type != 'code':
-                lines = []
-                for l in c.source.split('\n'):
-                    try:
-                        lines.append(_[l])
-                    except:
-                        lines.append(l)
-                c.source = '\n'.join(lines)
+        id2msgstr[e.msgid] = e.msgstr
+    try:
+        for w in d.worksheets:
+            translate_cells(w.cells, id2msgstr)
+    except AttributeError:
+        translate_cells(d.cells, id2msgstr)
+
     nbformat.write(d, outfile)
     return 0
 
